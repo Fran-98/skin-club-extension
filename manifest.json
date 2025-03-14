@@ -1,0 +1,30 @@
+{
+    "name": "Skin Club Calculator",
+    "description": "Skin Club Calculator",
+    "version": "1.0",
+    "manifest_version": 3,
+    "action": {
+      "default_popup": "/popup/popup.html",
+      "default_icon": "images/icon.png"
+    },
+    "permissions": [
+        "activeTab"
+      ],
+    "background": {
+        "service_worker": "background.js"
+      },
+    "content_scripts": [
+        {
+          "js": ["scripts/content.js"],
+          "matches": [
+            "https://skin.club/es/cases/open/*"
+          ]
+        }
+      ],
+      "icons": {
+        "16": "images/16.ico",
+        "32": "images/32.ico",
+        "48": "images/48.ico",
+        "128": "images/128.ico"
+      }
+  }

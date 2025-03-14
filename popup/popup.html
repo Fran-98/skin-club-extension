@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROI de la Caja</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212; /* Fondo oscuro */
+            color: #fff;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 300px;
+            max-width: 350px;
+        }
+        #roi-container {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            font-size: 1.5em;
+            color: #9b59b6; /* Título violeta rosa */
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        p {
+            font-size: 1em;
+            margin: 8px 0;
+        }
+        .roi-value {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        #roi-container p {
+            font-size: 1.1em;
+            color: #bdc3c7;
+        }
+        .highlight {
+            color: #f39c12;
+        }
+        .note {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="roi-container">
+        <h2>Case ROI</h2>
+        <p id="case-price">Loading...</p>
+        <p id="expected-roi">Loading...</p>
+        <p id="prob-win">Loading...</p>
+        <p id="expected-roi-upgrade">Loading...</p>
+        <p class="note">Calculated on current chances al probabilities.</p>
+        <a href="https://buymeacoffee.com/franman" target="_blank" style="color: #4CAF50; text-decoration: none;">If this tool helped you and you feel like it send ❤️</a><br>
+        <a href="https://steamcommunity.com/tradeoffer/new/?partner=67016770&token=h3Xc4KVg" target="_blank" style="color: #FF5733; text-decoration: none;">Or send me a 🔫</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
