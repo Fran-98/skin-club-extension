@@ -1,11 +1,35 @@
 let lastURL = location.href;
-let extracted = false;
+let lastSkinCount = 0;
 let retryAttempts = 0;
-const maxRetries = 10; 
+const maxRetries = 3;
+const initialRetryDelay = 1000;
+const longRetryDelay = 5000;
 
-function addROICalculatorToPage(casePrice, expectedROI, probWinOrEven, expectedROIWithUpgrade) {
+function titleCase(str) {
+    var splitStr = str.toLowerCase().split(' ');
+    for (var i = 0; i < splitStr.length; i++) {
+        splitStr[i] = splitStr[i].charAt(0).toUpperCase() + splitStr[i].substring(1);     
+    }
+    // Directly return the joined string
+    return splitStr.join(' '); 
+ }
+
+ function getCaseName() {
+    const match = location.href.match(/cases\/open\/([^\/]+)/);
+    if (match) {
+      let caseName = decodeURIComponent(match[1]);
+      return caseName.replace(/-/g, ' ').replace(/_/g, ' ');
+    } else {
+      return "Case";
+    }
+  }
+
+function isCaseOpenPage() {
+    return /^https:\/\/skin\.club\/[a-z]{2}\/cases\/open\//.test(location.href);
+}
+
+function addROICalculatorToPage(caseName, casePrice, expectedROI, probWinOrEven, expectedROIWithUpgrade) {
     let roiDiv = document.getElementById("roi-calculator");
-
     if (!roiDiv) {
         roiDiv = document.createElement("div");
         roiDiv.id = "roi-calculator";
@@ -21,133 +45,123 @@ function addROICalculatorToPage(casePrice, expectedROI, probWinOrEven, expectedR
     }
 
     roiDiv.innerHTML = `
-    <b>Case ROI</b><br>
+    <b>${titleCase(caseName)} ROI</b><br>
     Case price: $${casePrice.toFixed(2)}<br>
     Expected ROI: $${expectedROI.toFixed(2)}<br>
     Win/Even prob: ${(probWinOrEven * 100).toFixed(2)}%<br>
     Upgrade ROI (x1.5): $${expectedROIWithUpgrade.toFixed(2)}<br><br>
     <a href="https://buymeacoffee.com/franman" target="_blank" style="color: #4CAF50; text-decoration: none;">Send ❤️</a><br>
     <a href="https://steamcommunity.com/tradeoffer/new/?partner=67016770&token=h3Xc4KVg" target="_blank" style="color: #FF5733; text-decoration: none;">Or send me a 🔫</a>
-`;
+    `;
 }
 
 function calculateROI(casePrice, skins) {
     let expectedROI = 0;
     let expectedROIWithUpgrade = 0;
     let probWinOrEven = 0;
-
     skins.forEach(skin => {
-        let price = parseFloat(skin.price.replace('$', '')); // Convertir precio a número
-        let probability = parseFloat(skin.probability.replace('%', '')) / 100; // Convertir % a decimal
-
-        expectedROI += price * probability; // Sumar al valor esperado
-
-        if (price >= casePrice) {
-            probWinOrEven += probability; // Sumar probabilidad de ganar o salir even
-        }
-
-        // Cálculo de ROI con actualización
-        let upgradedPrice = 1.05 * price; // Valor después de actualizar
-        let expectedPriceAfterUpgrade = (0.7 * upgradedPrice) + (0.3 * 0); // 70% chance de éxito
+        let price = parseFloat(skin.price.replace('$', ''));
+        let probability = parseFloat(skin.probability.replace('%', '')) / 100;
+        expectedROI += price * probability;
+        if (price >= casePrice) probWinOrEven += probability;
+        let upgradedPrice = 1.05 * price;
+        let expectedPriceAfterUpgrade = (0.7 * upgradedPrice) + (0.3 * 0);
         expectedROIWithUpgrade += expectedPriceAfterUpgrade * probability;
     });
-
     return { expectedROI, probWinOrEven, expectedROIWithUpgrade };
 }
 
-function extractSkinData() {
-    if (extracted) return;
-
+function fastScrollToLoadAllSkins(callback) {
     const skins = document.querySelectorAll('.case-skin');
+    let hasValidSkins = Array.from(skins).some(skin => skin.querySelector('.case-skin__price .currency-text')?.innerText.trim());
+    let hasInvalidSkins = Array.from(skins).some(skin => !skin.querySelector('.case-skin__price .currency-text')?.innerText.trim());
 
     if (skins.length === 0) {
-        console.log("Waiting for skings...");
-        retryAttempts++;  // Aumentar el contador de intentos
-        if (retryAttempts <= maxRetries) {
-            setTimeout(extractSkinData, 1000);  // Reintentar después de 1 segundo
-        } else {
-            console.log("Max retries and skins were not loaded.");
-        }
+        // console.log("No skins detectados, reintentando...");
+        retryExtract(() => fastScrollToLoadAllSkins(callback));
         return;
     }
 
-    const firstSkin = skins[0];
-    const nameExists = firstSkin.querySelector('.case-skin__name')?.innerText.trim();
-    const priceExists = firstSkin.querySelector('.case-skin__price .currency-text')?.innerText.trim();
+    if (hasValidSkins && hasInvalidSkins) {
+        // console.log("Haciendo fast scroll...");
+        let scrollHeight = document.body.scrollHeight;
+        window.scrollTo(0, scrollHeight);
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                // console.log("Fast scroll terminado. Extrayendo datos...");
+                callback();
+            }, 1000);
+        }, 1000);
+    } else {
+        // console.log("Todas las skins están cargadas correctamente.");
+        callback();
+    }
+}
 
-    if (!nameExists || !priceExists) {
-        // console.log("Skins without info, waiting...");
-        retryAttempts++;  // Aumentar el contador de intentos
-        if (retryAttempts <= maxRetries) {
-            setTimeout(extractSkinData, 1000);  // Reintentar después de 1 segundo
-        } else {
-            console.log("Max retries and sking were not loaded.");
-        }
+function retryExtract(callback) {
+    if (retryAttempts >= maxRetries) {
+        // console.log("Máximo de reintentos alcanzado.");
         return;
     }
+    retryAttempts++;
+    let delay = retryAttempts < 2 ? initialRetryDelay : longRetryDelay;
+    // console.log(`Reintentando extracción en ${delay / 1000} segundos...`);
+    setTimeout(callback, delay);
+}
 
-    extracted = true;
-
-    // Extraer información de los skins
-    const skinData = Array.from(skins).map(skin => {
+function extractSkinData() {
+    if (!location.href.includes("/cases/open/")) return;
+    const skins = document.querySelectorAll('.case-skin');
+    if (skins.length === 0) {
+        retryExtract(extractSkinData);
+        return;
+    }
+    let skinData = Array.from(skins).map(skin => {
         const name = skin.querySelector('.case-skin__name')?.innerText.trim() || 'N/A';
-        const title = skin.querySelector('.case-skin__title')?.innerText.trim() || 'N/A';
-        const quality = skin.querySelector('.case-skin__quality')?.innerText.trim() || 'N/A';
         const price = skin.querySelector('.case-skin__price .currency-text')?.innerText.trim() || 'N/A';
         const probability = skin.querySelector('.case-skin-chance .chance-text')?.innerText.trim() || 'N/A';
+        return { name, price, probability };
+    }).filter(item => !isNaN(parseFloat(item.price.replace('$', ''))) && !isNaN(parseFloat(item.probability.replace('%', ''))));
 
-        return { name, title, quality, price, probability };
-    });
-
-    // Extraer el precio de la caja
-    const casePriceElement = document.querySelector('[data-qa="sticker-case-price-element"] .currency-text');
+    const casePriceElement = document.querySelector('[data-qa="sticker-case-price-element"] .currency-text') 
+                          || document.querySelector('.case-price');
     const casePrice = casePriceElement ? parseFloat(casePriceElement.innerText.trim().replace('$', '')) : 0;
-
-    // Verificar si hay NaN y si es necesario reintentar
-    if (isNaN(casePrice) || skinData.some(skin => isNaN(parseFloat(skin.price.replace('$', ''))))) {
-        console.log("NaN values, waiting...");
-        retryAttempts++;  // Aumentar el contador de intentos
-        if (retryAttempts <= maxRetries) {
-            setTimeout(extractSkinData, 1000);  // Reintentar después de 1 segundo
-        } else {
-            // console.log("Máximo número de intentos alcanzado. No se pudo extraer la información completa.");
-        }
-        return; // Detener la ejecución hasta el siguiente intento
+    if (isNaN(casePrice) || skinData.length === 0) {
+        retryExtract(extractSkinData);
+        return;
     }
-
-    // Calcular ROI y probabilidades
     const { expectedROI, probWinOrEven, expectedROIWithUpgrade } = calculateROI(casePrice, skinData);
-
-    console.log("Data extracted:", { casePrice, skins: skinData });
-    console.log(`ROI: $${expectedROI.toFixed(2)}`);
-    console.log(`Even or win prob: ${(probWinOrEven * 100).toFixed(2)}%`);
-    console.log(`ROI upgrading x1.5: $${expectedROIWithUpgrade.toFixed(2)}`);
-
-    addROICalculatorToPage(casePrice, expectedROI, probWinOrEven, expectedROIWithUpgrade);
+    
+    addROICalculatorToPage(getCaseName(), casePrice, expectedROI, probWinOrEven, expectedROIWithUpgrade);
+    
+    // BG
     chrome.runtime.sendMessage({
         type: "updateROI",
         data: {
-            casePrice,
-            expectedROI,
-            probWinOrEven,
-            expectedROIWithUpgrade
+            caseName: getCaseName(),
+            casePrice: casePrice,
+            expectedROI: expectedROI,
+            probWinOrEven: probWinOrEven,
+            expectedROIWithUpgrade: expectedROIWithUpgrade
         }
     });
 }
 
-// Observador para detectar cambios en el DOM y verificar si la URL cambió
 const observer = new MutationObserver(() => {
-    if (location.href !== lastURL) {  
+    if (!isCaseOpenPage()) return;
+    if (location.href !== lastURL) {
         // console.log("Cambio de página detectado, reiniciando extracción...");
         lastURL = location.href;
-        extracted = false;
-        retryAttempts = 0;  // Reiniciar contador de intentos al cambiar de página
-        extractSkinData();
-    } else {
-        extractSkinData();
+        lastSkinCount = 0;
+        retryAttempts = 0;
+        fastScrollToLoadAllSkins(extractSkinData);
     }
 });
-
 observer.observe(document.body, { childList: true, subtree: true });
 
-extractSkinData();  // Llamada inicial para intentar extraer los datos
+window.addEventListener('DOMContentLoaded', () => {
+    if (location.href.includes("/cases/open/")) {
+        fastScrollToLoadAllSkins(extractSkinData);
+    }
+});

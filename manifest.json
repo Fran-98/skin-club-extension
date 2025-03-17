@@ -8,7 +8,6 @@
       "default_icon": "images/icon.png"
     },
     "permissions": [
-        "activeTab"
       ],
     "background": {
         "service_worker": "background.js"
@@ -17,7 +16,7 @@
         {
           "js": ["scripts/content.js"],
           "matches": [
-            "https://skin.club/es/cases/open/*"
+            "https://skin.club/*/cases/open/*"
           ]
         }
       ],
