@@ -1,7 +1,7 @@
 {
     "name": "Skin Club Calculator",
     "description": "Skin Club Calculator",
-    "version": "1.0",
+    "version": "1.1",
     "manifest_version": 3,
     "action": {
       "default_popup": "/popup/popup.html",
@@ -16,7 +16,7 @@
         {
           "js": ["scripts/content.js"],
           "matches": [
-            "https://skin.club/*/cases/open/*"
+            "https://skin.club/*"
           ]
         }
       ],

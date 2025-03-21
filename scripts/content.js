@@ -1,7 +1,7 @@
 let lastURL = location.href;
 let lastSkinCount = 0;
 let retryAttempts = 0;
-const maxRetries = 3;
+const maxRetries = 10;
 const initialRetryDelay = 1000;
 const longRetryDelay = 5000;
 
@@ -54,6 +54,14 @@ function addROICalculatorToPage(caseName, casePrice, expectedROI, probWinOrEven,
     <a href="https://steamcommunity.com/tradeoffer/new/?partner=67016770&token=h3Xc4KVg" target="_blank" style="color: #FF5733; text-decoration: none;">Or send me a 🔫</a>
     `;
 }
+
+function removeROICalculator() {
+    const roiDiv = document.getElementById("roi-calculator");
+    if (roiDiv) {
+        roiDiv.remove();
+    }
+}
+
 
 function calculateROI(casePrice, skins) {
     let expectedROI = 0;
@@ -149,7 +157,10 @@ function extractSkinData() {
 }
 
 const observer = new MutationObserver(() => {
-    if (!isCaseOpenPage()) return;
+    if (!isCaseOpenPage()){
+        removeROICalculator();
+        return;
+    }
     if (location.href !== lastURL) {
         // console.log("Cambio de página detectado, reiniciando extracción...");
         lastURL = location.href;
